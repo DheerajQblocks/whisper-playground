@@ -63,8 +63,7 @@ const SettingsSections = ({
   }
 
   function onLanguageChangeChangeLocal(newValue) {
-    // console.log("lang", newValue);
-    setLanguage(newValue); // Assuming setLanguage is adjusted to accept the whole language object.
+    setLanguage(selectedLanguage.find(lang => lang.code === newValue.code));
   }
   
 

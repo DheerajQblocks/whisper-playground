@@ -80,7 +80,7 @@ const languages = [
   const [numSpeakers, setNumSpeakers] = useState(2);
   const [diarize, setDiarize] = useState("false");
   const [removeSilence, setRemoveSilence] = useState("false");
-  const [language, setLanguage] = useState(languages.find(lang => lang.code === "en").code);
+  const [language, setLanguage] = useState();
   const [isLiveTranscribing, setIsLiveTranscribing] = useState(false);
   const mediaRecorderRef = useRef(null);
   const recordingIntervalRef = useRef(null);
@@ -98,7 +98,7 @@ const languages = [
         num_speakers: numSpeakers,
         diarize: diarize,
         remove_silence: removeSilence,
-        language: language,
+        language: language?.code || 'en',
         file: uploadResponse,
       });
       setText((prevText) => prevText + " " + transcriptionResponse?.text);
