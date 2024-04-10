@@ -22,6 +22,7 @@ import WaveformVisualizer from "./WaveformVisualizer";
 import io from "socket.io-client";
 import { PulseLoader } from "react-spinners";
 import MonsterApiClient from "monsterapi";
+import { Grid, TextField } from "@material-ui/core";
 
 const useStyles = () => ({
   root: {
@@ -54,24 +55,22 @@ const useStyles = () => ({
   },
 });
 
-
-
 const App = ({ classes }) => {
-
   // Monsterapi utilization start
-  
-// Initialize MonsterAPI client
-const client = new MonsterApiClient(process.env.REACT_APP_MONSTERAPITOKEN);
-const languages = [
-  { code: "none", name: "None" },
-  { code: "en", name: "English" },
-  { code: "af", name: "Afrikaans" },
-  { code: "am", name: "Amharic" },
-  // Add the rest of the languages as objects with 'code' and 'name' properties
-  { code: "ar", name: "Arabic" },
-  { code: "zh", name: "Chinese" },
-  // Add all the other languages here following the same structure
-];
+  const [monsterAPIToken, setMonsterAPIToken] = useState("");
+
+  // Initialize MonsterAPI client
+  const client = new MonsterApiClient(monsterAPIToken);
+  const languages = [
+    { code: "none", name: "None" },
+    { code: "en", name: "English" },
+    { code: "af", name: "Afrikaans" },
+    { code: "am", name: "Amharic" },
+    // Add the rest of the languages as objects with 'code' and 'name' properties
+    { code: "ar", name: "Arabic" },
+    { code: "zh", name: "Chinese" },
+    // Add all the other languages here following the same structure
+  ];
 
   const [transcriptionInterval, settranscriptionInterval] = useState(5);
   const [text, setText] = useState("");
@@ -98,7 +97,7 @@ const languages = [
         num_speakers: numSpeakers,
         diarize: diarize,
         remove_silence: removeSilence,
-        language: language?.code || 'en',
+        language: language?.code || "en",
         file: uploadResponse,
       });
       setText((prevText) => prevText + " " + transcriptionResponse?.text);
@@ -109,61 +108,64 @@ const languages = [
   };
 
   const startRecordingSegment = () => {
-    navigator.mediaDevices.getUserMedia({ audio: true }).then((stream) => {
-      // Set up MediaRecorder
-      const mediaRecorder = new MediaRecorder(stream);
-      mediaRecorderRef.current = mediaRecorder;
-      const chunks = [];
-      mediaRecorder.ondataavailable = (event) => {
-        chunks.push(event.data);
-      };
-      mediaRecorder.onstop = () => {
-        const blob = new Blob(chunks, { type: "audio/wav" });
-        processAudioBlob(blob);
-      };
-      mediaRecorder.start();
-      
-      // Set up audio context for visualization
-      const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-      const source = audioContext.createMediaStreamSource(stream);
-      const processor = audioContext.createScriptProcessor(4096, 1, 1);
-      source.connect(processor);
-      processor.connect(audioContext.destination);
-      
-      processor.onaudioprocess = (e) => {
-        // This is where you capture audio for visualization
-        const inputData = e.inputBuffer.getChannelData(0);
-        const inputDataCopy = new Float32Array(inputData); // Copy the data
-        setAudioData(inputDataCopy); // Update the state for visualization
-      };
-  
-      // Stop recording after 5 seconds and process the audio
-      setTimeout(() => {
-        if (mediaRecorder.state !== "inactive") {
-          mediaRecorder.stop();
-          processor.disconnect(); // Stop processing audio data
-          audioContext.close(); // Close the audio context
-        }
-      }, 5000);
-    }).catch((error) => {
-      console.error("Error accessing microphone:", error);
-    });
+    navigator.mediaDevices
+      .getUserMedia({ audio: true })
+      .then((stream) => {
+        // Set up MediaRecorder
+        const mediaRecorder = new MediaRecorder(stream);
+        mediaRecorderRef.current = mediaRecorder;
+        const chunks = [];
+        mediaRecorder.ondataavailable = (event) => {
+          chunks.push(event.data);
+        };
+        mediaRecorder.onstop = () => {
+          const blob = new Blob(chunks, { type: "audio/wav" });
+          processAudioBlob(blob);
+        };
+        mediaRecorder.start();
+
+        // Set up audio context for visualization
+        const audioContext = new (window.AudioContext ||
+          window.webkitAudioContext)();
+        const source = audioContext.createMediaStreamSource(stream);
+        const processor = audioContext.createScriptProcessor(4096, 1, 1);
+        source.connect(processor);
+        processor.connect(audioContext.destination);
+
+        processor.onaudioprocess = (e) => {
+          // This is where you capture audio for visualization
+          const inputData = e.inputBuffer.getChannelData(0);
+          const inputDataCopy = new Float32Array(inputData); // Copy the data
+          setAudioData(inputDataCopy); // Update the state for visualization
+        };
+
+        // Stop recording after 5 seconds and process the audio
+        setTimeout(() => {
+          if (mediaRecorder.state !== "inactive") {
+            mediaRecorder.stop();
+            processor.disconnect(); // Stop processing audio data
+            audioContext.close(); // Close the audio context
+          }
+        }, 5000);
+      })
+      .catch((error) => {
+        console.error("Error accessing microphone:", error);
+      });
   };
-  
 
   const startLiveTranscription = () => {
     const isConfigValid = validateConfig();
     if (!isConfigValid) return;
     setIsLiveTranscribing(true);
     setIsRecording(true);
-    setStatusMessage("Transcription in progress")
+    setStatusMessage("Transcription in progress");
     startRecordingSegment(); // Start the first segment immediately
   };
 
   const stopLiveTranscription = () => {
     setIsLiveTranscribing(false);
     setIsRecording(false);
-    setStatusMessage("Ready to transcribe")
+    setStatusMessage("Ready to transcribe");
     if (
       mediaRecorderRef.current &&
       mediaRecorderRef.current.state === "recording"
@@ -187,7 +189,7 @@ const languages = [
   }, [isLiveTranscribing, isProcessing]);
 
   // Monsterapi utilization end
-  
+
   const [transcribedData, setTranscribedData] = useState([]);
   const [audioData, setAudioData] = useState([]);
   const [isRecording, setIsRecording] = useState(false);
@@ -245,27 +247,26 @@ const languages = [
 
   const validateConfig = () => {
     const errorMessages = [];
+
+    if (!monsterAPIToken) {
+      errorMessages.push(`MonsterAPI Token is required.`);
+    }
+
     if (beamSize < 1) {
       errorMessages.push("Beam size must be equal to or larger than 1");
     } else if (beamSize % 1 !== 0) {
       errorMessages.push("Beam size must be a whole number");
     }
-     if (transcriptionInterval < 0) {
-      errorMessages.push(
-        `Transcription Interval in Sec larger than ${0}`
-      );
+    if (transcriptionInterval < 0) {
+      errorMessages.push(`Transcription Interval in Sec larger than ${0}`);
     }
     if (bestOf < 0) {
-      errorMessages.push(
-        `Best of must larger than ${0}`
-      );
+      errorMessages.push(`Best of must larger than ${0}`);
     }
     if (transcriptionInterval < 0) {
-      errorMessages.push(
-        `Transcription Interval in Sec larger than ${0}`
-      );
+      errorMessages.push(`Transcription Interval in Sec larger than ${0}`);
     }
-    
+
     if (transcribeTimeout < STEP_SIZE) {
       errorMessages.push(
         `Transcription timeout must be equal or larger than ${STEP_SIZE}`
@@ -413,21 +414,21 @@ const languages = [
       </div>
       <div className={classes.settingsSection}>
         <SettingsSections
-        // Monster API States Start
-        possibleLanguages={languages}
-        language={language}
-        selectedLanguage={languages}
-        setLanguage={setLanguage}
-        transcriptionInterval={transcriptionInterval}
-        settranscriptionInterval={settranscriptionInterval}
-        numSpeakers={numSpeakers}
-        onLanguageChange={setLanguage}
-        bestOf={bestOf}
-        setBestOf={setBestOf}
-        setNumSpeakers={setNumSpeakers}
-        removeSilence={removeSilence}
-        setRemoveSilence={setRemoveSilence}
-        // Monster API States End
+          // Monster API States Start
+          possibleLanguages={languages}
+          language={language}
+          selectedLanguage={languages}
+          setLanguage={setLanguage}
+          transcriptionInterval={transcriptionInterval}
+          settranscriptionInterval={settranscriptionInterval}
+          numSpeakers={numSpeakers}
+          onLanguageChange={setLanguage}
+          bestOf={bestOf}
+          setBestOf={setBestOf}
+          setNumSpeakers={setNumSpeakers}
+          removeSilence={removeSilence}
+          setRemoveSilence={setRemoveSilence}
+          // Monster API States End
           disabled={isRecording}
           transcribeTimeout={transcribeTimeout}
           beamSize={beamSize}
@@ -441,6 +442,36 @@ const languages = [
           onMethodChange={setTranscriptionMethod}
         />
       </div>
+
+      <Grid
+        container
+        spacing={2}
+        direction="row"
+        justifyContent="center"
+        alignItems="center"
+      >
+        <Grid item 
+        style={{ marginBottom: "2rem" }}
+        >
+          <TextField
+            label="Enter MonsterAPI Token"
+            type="text"
+            value={monsterAPIToken}
+            
+            onChange={(event) => setMonsterAPIToken(event.target.value)}
+          />
+        </Grid>
+        <Grid item>
+          <a
+            href="https://monsterapi.ai/signup"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            Click here to get it
+          </a>
+        </Grid>
+      </Grid>
+
       {errorMessages && (
         <ErrorMessage
           messages={errorMessages}
@@ -476,9 +507,14 @@ const languages = [
         <WaveformVisualizer audioData={audioData} />
       </div>
 
-      <div className={classes.transcribeOutput}>
+      <div 
+      // className={classes.transcribeOutput}
+      // style={{maxHeight: "1000px !important", overflow: "auto"}}
+      >
+        
         {/* <TranscribeOutput data={transcribedData} /> */}
-        <p className="whitespace-pre-wrap text-gray-700 text-base">{text}</p>
+        <p style={{ whiteSpace: "pre-wrap"}}
+        >{text}</p>
       </div>
 
       <PulseLoader
