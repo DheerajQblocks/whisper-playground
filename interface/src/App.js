@@ -163,15 +163,23 @@ const App = ({ classes }) => {
   };
 
   const stopLiveTranscription = () => {
+    console.log("Stopping live transcription");
     setIsLiveTranscribing(false);
     setIsRecording(false);
     setStatusMessage("Ready to transcribe");
-    if (
-      mediaRecorderRef.current &&
-      mediaRecorderRef.current.state === "recording"
-    ) {
-      mediaRecorderRef.current.stop();
+  
+    if (mediaRecorderRef.current) {
+      console.log("Media recorder reference exists");
+      if (mediaRecorderRef.current.state === "recording") {
+        console.log("Media recorder is recording. Stopping...");
+        mediaRecorderRef.current.stop();
+      } else {
+        console.log("Media recorder is not recording.");
+      }
+    } else {
+      console.log("Media recorder reference does not exist.");
     }
+  
     clearInterval(recordingIntervalRef.current);
   };
 
