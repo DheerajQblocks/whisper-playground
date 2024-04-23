@@ -72,7 +72,7 @@ const App = ({ classes }) => {
     // Add all the other languages here following the same structure
   ];
 
-  const [transcriptionInterval, settranscriptionInterval] = useState(5);
+  const [transcriptionInterval, settranscriptionInterval] = useState(2);
   const [text, setText] = useState("");
   const [transcriptionFormat, setTranscriptionFormat] = useState("text");
   const [bestOf, setBestOf] = useState(8);
